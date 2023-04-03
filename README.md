@@ -1,6 +1,6 @@
 # SynchedIn
 
->This README describes part 2 of the activity. For part 1, see [github.com/jeremyrrose/synched-in](https://github.com/jeremyrrose/synched-in).
+>This README describes part 3 of the activity. For earlier steps, see [part 1](https://github.com/jeremyrrose/synched-in) and [part2](https://github.com/jeremyrrose/synched-in-part-2).
 
 _OMG what if there were an app that let you connect with other professionals in your field?_
 
@@ -18,7 +18,7 @@ The packages `react-bootstrap` and `react-router-dom` have also been pre-install
 
 There are some interesting things in the `utils` and `assets` directories, which we'll address as we need to.
 
-The app currently fetches the data and displays a card for each user. Let's filter them!
+The app currently fetches the data and displays a card for each user, and we can filter by dev level, company name, and favorite music genre.
 
 ## Setup
 
@@ -35,8 +35,8 @@ Let's think about what we're doing.
 This app will show a list of fake people who work at fake companies. Let's pretend it's real!
 
 ### Our goals
-- Show the list of people in a sensible way. **DONE**
-- Enable the app to show selected people based on their status in a few categories that are most important for business decsisions:
+- **DONE** Show the list of people in a sensible way. 
+- **DONE** Enable the app to show selected people based on their status in a few categories that are most important for business decsisions:
     - `devLevel`
     - `company`
     - `favoriteMusicGenre`
@@ -45,119 +45,192 @@ This app will show a list of fake people who work at fake companies. Let's prete
 
 ### Think ahead
 
-We need some way to filter users by dev level. We'll need to set up a way for the user to select a level, then display results based on that. We can probably use `.filter()`...
+Now we need to find a way to let the user choose favorites. There will need to be a button on each card that determines whether the person is a favorite or not, and we'll need to store that information in state.
 
-## Step 2: Play with filter
+We'll also need a way to display the favorites if the user navigates to `/favorites`, so we'll probably use React Router.
 
-In `App.js` we currently map through the entire array of people. Can we filter it? Look for this line:
+>NOTE: In a production app, the user's "favorites" information would need to be stored in our back-end database so that user preferences could be preserved! We likely wouldn't do the filtering for this in the front end, either. It's likely that our application would simply make another call to the API to retrieve favorites.
+>
+>But we'll still mimic it here, because it's good practice, and it's fun.
+
+## Step 2: Think about identity
+
+Sure, each of our users has a spectacular `fullName`, but what's the _easiest_ way to identify an individual person? How about the `id`?
+
+For now, edit the `Person` component to display each user's ID on their card. We'll use this value later.
+
+## Step 3: Make a place to store the IDs
+
+We'll need this to live in `App.js` so that we can pass it down to various child components:
 
 ```js
-          { people.map(person => <Person key={person.id} person={person} />) }
+  const [ favorites, setFavorites ] = useState([1])
 ```
 
-What if we chained a `.filter()` right in there?
+>For now, we've pre-set our friend Kathy Fahey onto our favorites list so we can test some things.
+
+And we'll need our `Person` cards to be able to access and change this value. Pass `favorites` and `setFavorites` as props for `Person`.
+
+## Step 4: Display whether a person is a favorite
+
+Each person card now has three props:
+- `person`: the person's entry in the data
+- `favorites`: an array of IDs
+- `setFavorites`: a way to change that array.
+
+Let's use Bootstrap's `Badge` component to show the status. In `Person.jsx`:
 
 ```js
-          { people
-              .filter(person => person.devLevel === "student")
-              .map(person => <Person key={person.id} person={person} />) }
+import Badge from 'react-bootstrap/Badge';
 ```
 
-Try this and see what you see in the browser.
-
-Cool! It's just students! Now change it back, because we need to set up a dynamic filter. We'll come back to this.
-
-## Step 3: Create a form
-
-Ok, we're going to need a way to store the user's preference for the dev level filter. State is perfect for that! In `App.js`:
+And, nested in _the same element_ where you're currently displaying the `fullName`, let's add the badge:
 
 ```js
-  const [ devLevelFilter, setDevLevelFilter ] = useState("")
+            <Badge bg="danger" className="ms-2">♥</Badge>
 ```
 
-OK, great. The thing is, we don't want to clutter up our `App.js` with the form logic. Create another component called `Filter.jsx` and set up a form! You can use Bootstrap's `Form` component. It might look like this:
+If you look now in your browser, you'll see that _everyone_ looks like a favorite. We don't even know these people! They can't all be our favorites!!!
+
+Fortunately we can use some wild React moves to set a condition under which the badge will appear. Change the `Badge` line to this:
 
 ```js
-import Form from 'react-bootstrap/Form'
+    { props.favorites.includes(props.person.id) && <Badge bg="danger" className="ms-2">♥</Badge> }
+```
 
-export default function Filter (props) {
+>**_What's going on here?_** It depends a lot upon the return values of `&&` and `includes()`.
+>
+>`.includes` is the easiest to explain. If the `favorites` array _includes_ the `person.id`, it will return `true`, otherwise `false`.
+> 
+> What's wild is that `&&` actually returns values too. If the first condition (the part before `&&`) is falsy, this returns `false` -- which, conveniently, React ignores in the render. No problem! But if all the conditions are truthy, `&&` returns the final truthy element.
+>
+>In other words, if the first part is truthy, React will plug in the second part. It's weird but you'll get used to it!
 
+## Step 5: Add a person to the favorites
+
+Adding to an array in React state is a _little_ tricky. Just like we can't reset state variables directly, we also can't just `.push` and `.pop`. Instead, we have to set state to a _new_ value.
+
+Let's set up a new function inside `Person.jsx` that can use props to update the favorites array:
+
+```js
+    const addToFavorites = () => {
+        // create a shallow copy of the current array
+        const newFavorites = [...props.favorites]
+        // add the current person's ID to the array
+        newFavorites.push(props.person.id)
+        // change the value in state
+        props.setFavorites(newFavorites)
+    }
+```
+
+>NOTE: There are ways to do all of this on one line. You may see something like `setFavorites(prev=>[...prev, person.id])` in the wild, so don't be alarmed. For now, the above is much easier to understand.
+
+We could attach this new function to a button, but instead let's use the badge directly. You can change our `&&` move to a ternary statement that displays a different, clickable badge for non-faves. It might look like this:
+
+```js
+                { props.favorites.includes(props.person.id) ? 
+                    <Badge bg="danger" className="ms-2">♥</Badge> :
+                    <Badge bg="light" text="secondary" className="ms-2" onClick={addToFavorites}>♥</Badge>
+                }
+```
+
+>NOTE: This is actually abusing Bootstrap -- `Badge` elements aren't meant to be clickable, and this could cause accessibility issues.
+
+## Step 6: Removing a person from favorites
+
+Removing a value from an array in React is also tricky, but in this case, we actually already know a few methods that return a new array. We can use `.filter`. Remember that `favorites` is actually an array of IDs, and think about this code:
+
+```js
+    favorites.filter(fave => fave !== person.id)
+```
+
+This would give us a new array with everything _except_ the current ID, right? We can actually plug something like this right in:
+
+```js
+    props.setFavorites(props.favorites.filter(fave => fave !== props.person.id))
+```
+
+Whoa. While we could plug that in inline somewhere, let's stick with our pattern and make a new function in `Person.jsx`:
+
+```js
+    const removeFromFavorites = () => {
+        // create a new array with everything from current faves except current id
+        const newFavorites = props.favorites.filter(fave => fave !== props.person.id)
+        // change the value in state
+        props.setFavorites(newFavorites)
+    }
+```
+
+Now use this function as the `onClick` callback for the original version of the badge. Now you can turn friendships on and off at will, just like in real life!
+
+## BONUS: Displaying favorites
+
+If we want to display _just_ the favorites at `/favorites`, we'll need to use React Router.
+
+Start by importing BrowserRouter in `index.js` and wrapping your `App` component with it.
+
+Then, in `App.js`, we can import `Routes` and `Route` from `'react-router-dom'`. You _could_ set up a simple routing situation by replacing your current "people list" in the render with something like this:
+
+```js
+      <Routes>
+        <Route path="/favorites" element={(
+            <div className="people-div d-flex flex-wrap justify-content-center">
+                { people
+                    .filter(person => favorites.includes(person.id))
+                    .map(person => <Person key={person.id} person={person} favorites={favorites} setFavorites={setFavorites} />) }
+            </div>
+          )} />
+        <Route path="/" element={(
+            <div className="people-div d-flex flex-wrap justify-content-center">
+                { people
+                    .filter(filterFunction)
+                    .map(person => <Person key={person.id} person={person} favorites={favorites} setFavorites={setFavorites} />) }
+            </div>
+          )} />
+      </Routes>
+```
+
+>NOTE: It would make more sense to refactor the people list into a separate component! Unfortunately that is out of scope for us at the moment.
+
+OK, that works, but our `Filter` only works on the home page. Fortunately, we can include more that one `Routes` component:
+
+```js
+      <div className="position-sticky top-0 bg-body pb-2" style={{zIndex:10}}>
+        <Header />
+        <Routes>
+          <Route path="/" element={<Filter 
+            setDevLevelFilter={setDevLevelFilter}
+            setCompanyFilter={setCompanyFilter}
+            setGenreFilter={setGenreFilter}
+            />} />
+        </Routes>
+      </div>
+```
+
+Last, you'll import the `Link` component from React Router into your `Header` component. You might end up with something like this:
+
+```js
+import { Link } from 'react-router-dom'
+
+export default function Header (props) {
     return (
-        <Form>
-            <Form.Label htmlFor="devLevel-select">Filter by developer level: </Form.Label>
-            <Form.Select id="devLevel-select">
-            <option value="">No filter</option>
-            </Form.Select>
-        </Form>
+        <div className="container-fluid d-flex justify-content-start align-items-center p-2 m-2 bg-primary" style={{color: "white"}}>
+            <div className="logo">
+                <Link 
+                    style={{fontWeight: "bold", fontSize: "24px", color:"white", textDecoration: "none"}}
+                    to="/" 
+                    >SynchedIn</Link>
+            </div>
+            <Link 
+                className="ms-4" 
+                style={{color:"white", textDecoration: "none"}} 
+                to="/favorites"
+                >My Favorites</Link>
+        </div>
     )
 }
 ```
 
-Import this component into `App.js` and show it below the header.
+## BONUS: Undo bad UI practices
 
-## Step 4: Populate the form
-
-First of all, what are the possible dev levels? This repository actually includes some constants, so we can just pull them in from `utils/constants.js`. In `Filter.jsx`:
-
-```js
-import { DEV_LEVELS as devLevels } from '../utils/constants'
-```
-
-You can console.log `devLevels` if you want. :shrug It's an array of strings!
-
-We can actually map through this array to generate our form options! Each `<option>` should use the current `devLevel` for its `key` and `value` attributes, and also for its inner text. See if you can set it up!
-
-## Step 5: Change state
-
-That's a handsome form, but currently when we select a level, nothing happens. We'll need to hook it up to state in `App.js` by passing in our setter through props:
-
-```js
-    <Filter setDevLevelFilter={setDevLevelFilter}/>
-```
-
-Now we can use `props.setDevLevelFilter` in the `Filter` component! Set up an `onChange` callback for the form to set the desired dev level in state. Test with React dev tools to see if the value is changing!
-
-## Step 6: Filter
-
->There are lots of ways to solve this, and depending on the situation in your future apps, you might use a variety of solutions. We'll look at one here.
-
-### Pseudocode!
-
-What do we need to do?
-
-- If a filter is set, we should just show people whose dev level matches the selected level.
-- If _no_ filter is set, just show the list of people
-
-### Filter by dev level
-
-We had some code earlier that worked to filter. We could set it up to work dynamically using our value in state just by plugging it in!
-
-```js
-          { people
-              .filter(person => person.devLevel === devLevelFilter)
-              .map(person => <Person key={person.id} person={person} />) }
-```
-
-Try it out. Pretty neat! There's a problem, though: If we select "No filter," we don't see _anybody_. :/
-
-### Get logical
-
-Take a look at just our callback function inside `.filter()`:
-
-```js
-    person => person.devLevel === devLevelFilter
-```
-
-Right now this function returns `true` if the person's dev level matches the filter. We need to add the logic to make it _also_ return `true` for everyone if the `devLevelFilter` is `""`. See if you can do it!
-
-Hints:
-- Remember that a callback function is... a function. It doesn't _have_ to be on one line.
-- Also remember that, if you _want_ it to be on one line, you can use a ternary statement (`?`) or the _OR_ operator (`||`) to do some slick logic.
-
->Make sure to check with your instructor if you get stuck!
-
-## BONUS: Set up another filter
-
-`utils/constants.js` _also_ includes the enumerated values for `company` and `favoriteMusicGenre`. Import those values and add another drop-down.
-
-How should you adjust your logic in `App.js` to filter by _both_?
+The badge on each card really should be a button. Refactor `Person.jsx` to use the `Button` component instead of `Badge`, and style it how you like.
