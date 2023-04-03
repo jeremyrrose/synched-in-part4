@@ -106,6 +106,8 @@ Fortunately we can use some wild React moves to set a condition under which the 
 >
 >In other words, if the first part is truthy, React will plug in the second part. It's weird but you'll get used to it!
 
+Now _only_ our friend Kathy Fahey should have a badge.
+
 ## Step 5: Add a person to the favorites
 
 Adding to an array in React state is a _little_ tricky. Just like we can't reset state variables directly, we also can't just `.push` and `.pop`. Instead, we have to set state to a _new_ value.
