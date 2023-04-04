@@ -1,6 +1,6 @@
 # SynchedIn
 
->This README describes part 4 of the activity. For earlier steps, see [part 1](https://github.com/jeremyrrose/synched-in), [part2](https://github.com/jeremyrrose/synched-in-part-2), [part3a](https://github.com/jeremyrrose/synched-in-part-3a) and [part3b](https://github.com/jeremyrrose/synched-in-part-3a).
+>This README describes part 4 of the activity. For earlier steps, see [part 1](https://github.com/jeremyrrose/synched-in), [part2](https://github.com/jeremyrrose/synched-in-part-2), [part3a](https://github.com/jeremyrrose/synched-in-part-3a) and [part3b](https://github.com/jeremyrrose/synched-in-part-3b).
 
 _OMG what if there were an app that let you connect with other professionals in your field?_
 
