@@ -16,6 +16,8 @@ The packages `react-bootstrap` and `react-router-dom` have also been pre-install
 
 Parts 3a and 3b have been merged, so all the capabilities marked **DONE** under **Our goals** below are active.
 
+You can see a deployed version of this repository at [https://synched-in.surge.sh/](https://synched-in.surge.sh/).
+
 ## Setup
 
 - Fork and clone this repository.
