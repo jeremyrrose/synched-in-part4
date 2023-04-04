@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
 import fakeFetch from './utils/fakeFetch'
+import { Routes, Route } from 'react-router-dom'
 
 import Header from './components/Header';
 import Filter from './components/Filter'
 import Person from './components/Person';
+import Profile from './components/Profile'
 
 function App() {
 
@@ -41,17 +43,24 @@ function App() {
     <div className="app">
       <div className="position-sticky top-0 bg-body pb-2" style={{zIndex:10}}>
         <Header />
-        <Filter 
-          setDevLevelFilter={setDevLevelFilter}
-          setCompanyFilter={setCompanyFilter}
-          setGenreFilter={setGenreFilter}
-          />
+        <Routes>
+          <Route path="/" element={(
+            <Filter 
+              setDevLevelFilter={setDevLevelFilter}
+              setCompanyFilter={setCompanyFilter}
+              setGenreFilter={setGenreFilter}
+              />)} />
+        </Routes>
       </div>
-      <div className="people-div d-flex flex-wrap justify-content-center">
-          { people
+      <Routes>
+        <Route path="/" element={(
+          <div className="people-div d-flex flex-wrap justify-content-center">
+            { people
               .filter(filterFunction)
               .map(person => <Person key={person.id} person={person} />) }
-      </div>
+          </div>)} />
+        <Route path="profiles/:id" element={(<Profile />)} />
+      </Routes>
     </div>
   );
 }
