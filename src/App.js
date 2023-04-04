@@ -46,8 +46,11 @@ function App() {
         <Header />
         <Routes>
           <Route path="/" element={<Filter 
+            devLevelFilter={devLevelFilter}
             setDevLevelFilter={setDevLevelFilter}
+            companyFilter={companyFilter}
             setCompanyFilter={setCompanyFilter}
+            genreFilter={genreFilter}
             setGenreFilter={setGenreFilter}
             />} />
         </Routes>
