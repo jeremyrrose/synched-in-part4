@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Route, Routes } from 'react-router-dom'
 import fakeFetch from './utils/fakeFetch'
 
 import Header from './components/Header';
@@ -11,6 +12,7 @@ function App() {
   const [ devLevelFilter, setDevLevelFilter ] = useState("")
   const [ companyFilter, setCompanyFilter ] = useState("")
   const [ genreFilter, setGenreFilter ] = useState("")
+  const [ favorites, setFavorites ] = useState([1,5])
 
   useEffect(()=> {
     const getPeople = async () => {
@@ -41,17 +43,30 @@ function App() {
     <div className="app">
       <div className="position-sticky top-0 bg-body pb-2" style={{zIndex:10}}>
         <Header />
-        <Filter 
-          setDevLevelFilter={setDevLevelFilter}
-          setCompanyFilter={setCompanyFilter}
-          setGenreFilter={setGenreFilter}
-          />
+        <Routes>
+          <Route path="/" element={<Filter 
+            setDevLevelFilter={setDevLevelFilter}
+            setCompanyFilter={setCompanyFilter}
+            setGenreFilter={setGenreFilter}
+            />} />
+        </Routes>
       </div>
-      <div className="people-div d-flex flex-wrap justify-content-center">
-          { people
-              .filter(filterFunction)
-              .map(person => <Person key={person.id} person={person} />) }
-      </div>
+      <Routes>
+        <Route path="/favorites" element={(
+            <div className="people-div d-flex flex-wrap justify-content-center">
+                { people
+                    .filter(person => favorites.includes(person.id))
+                    .map(person => <Person key={person.id} person={person} favorites={favorites} setFavorites={setFavorites} />) }
+            </div>
+          )} />
+        <Route path="/" element={(
+            <div className="people-div d-flex flex-wrap justify-content-center">
+                { people
+                    .filter(filterFunction)
+                    .map(person => <Person key={person.id} person={person} favorites={favorites} setFavorites={setFavorites} />) }
+            </div>
+          )} />
+      </Routes>
     </div>
   );
 }
