@@ -1,6 +1,6 @@
 # SynchedIn
 
->This README describes part 2 of the activity. For part 1, see [github.com/jeremyrrose/synched-in](https://github.com/jeremyrrose/synched-in).
+>This README describes part 3 of the activity. For earlier steps, see [part 1](https://github.com/jeremyrrose/synched-in) and [part2](https://github.com/jeremyrrose/synched-in-part-2).
 
 _OMG what if there were an app that let you connect with other professionals in your field?_
 
@@ -18,7 +18,7 @@ The packages `react-bootstrap` and `react-router-dom` have also been pre-install
 
 There are some interesting things in the `utils` and `assets` directories, which we'll address as we need to.
 
-The app currently fetches the data and displays a card for each user. Let's filter them!
+The app currently fetches the data and displays a card for each user, and we can filter by dev level, company name, and favorite music genre.
 
 ## Setup
 
@@ -35,129 +35,293 @@ Let's think about what we're doing.
 This app will show a list of fake people who work at fake companies. Let's pretend it's real!
 
 ### Our goals
-- Show the list of people in a sensible way. **DONE**
-- Enable the app to show selected people based on their status in a few categories that are most important for business decsisions:
+- **DONE** Show the list of people in a sensible way. 
+- **DONE** Enable the app to show selected people based on their status in a few categories that are most important for business decsisions:
     - `devLevel`
     - `company`
     - `favoriteMusicGenre`
 - Enable the user to add "favorites." These users can be shown in a special list.
 - Enable the user to "block" users if they, for instance, have the temerity to list "Non Music" as their favorite music genre. That's insane. (Reasonable people call it "post-music," obviously.)
+- **NEW** Enable users to search other users by name, then follow a link to display the found user's profile.
 
 ### Think ahead
 
-We need some way to filter users by dev level. We'll need to set up a way for the user to select a level, then display results based on that. We can probably use `.filter()`...
+See that **NEW** tag above? It turns out our client didn't give us appropriate acceptance criteria for this app. It turns out they want to prioritize a user search function. Let's see what we can do!
 
-## Step 2: Play with filter
+Fortunately, our back-end engineers are awesome. They've already built two endpoints for us to use:
 
-In `App.js` we currently map through the entire array of people. Can we filter it? Look for this line:
+- `/search?term={searchTerm}`: Based on the value you provide for `{searchTerm}` the endpoint will return a list of users whose _names_ match the query. The schema for searched users (note that this is different from our normal user data) is:
 
-```js
-          { people.map(person => <Person key={person.id} person={person} />) }
-```
+    ```json
+    { 
+        "id": "number", 
+        "fullName": "string",
+        "company": "string" 
+    }
+    ```
 
-What if we chained a `.filter()` right in there?
+- `/users/{userId}`: Based on the value you provide for `{userId}` a single user will be returned. The user will have the same schema as users in our user data array, but note that the user will _not_ be nested in an array.
 
-```js
-          { people
-              .filter(person => person.devLevel === "student")
-              .map(person => <Person key={person.id} person={person} />) }
-```
+Amazing. Nice work, crew! We'll use these.
 
-Try this and see what you see in the browser.
+## Step 2: Layout
 
-Cool! It's just students! Now change it back, because we need to set up a dynamic filter. We'll come back to this.
-
-## Step 3: Create a form
-
-Ok, we're going to need a way to store the user's preference for the dev level filter. State is perfect for that! In `App.js`:
+We'll follow standard practice and place our search bar in the header, on the right side. First, let's create a new component for it in `components/Search.jsx`:
 
 ```js
-  const [ devLevelFilter, setDevLevelFilter ] = useState("")
-```
-
-OK, great. The thing is, we don't want to clutter up our `App.js` with the form logic. Create another component called `Filter.jsx` and set up a form! You can use Bootstrap's `Form` component. It might look like this:
-
-```js
-import Form from 'react-bootstrap/Form'
-
-export default function Filter (props) {
+export default function Search (props) {
 
     return (
-        <Form>
-            <Form.Label htmlFor="devLevel-select">Filter by developer level: </Form.Label>
-            <Form.Select id="devLevel-select">
-            <option value="">No filter</option>
-            </Form.Select>
-        </Form>
+        <div className="search mx-2">
+            SEEEEARCH
+        </div>
     )
 }
 ```
 
-Import this component into `App.js` and show it below the header.
+We'll build this out bigtime later, but for now, let's just `import` this component into `Header.jsx` and plug `<Search />` in right below the `div` with className "logo". Test it out!
 
-## Step 4: Populate the form
+Right now, it's on the left. :/ Change `justify-content-start` in the main header `div` to `justify-content-between`. Wow, thanks Bootstrap!
 
-First of all, what are the possible dev levels? This repository actually includes some constants, so we can just pull them in from `utils/constants.js`. In `Filter.jsx`:
+>NOTE: The `mx-2` class in the code sample above adds "level 2" padding on the left and right.
+
+## Step 3: Make it a controlled form
+
+In React, a "controlled form" is one that is hooked up to state -- in both directions! What's in state can change what's on the form, and what the user puts in the form can change what's in state. We love state. So first let's create some state for our search term:
 
 ```js
-import { DEV_LEVELS as devLevels } from '../utils/constants'
+    const [ searchTerm, setSearchTerm ] = useState("")
 ```
 
-You can console.log `devLevels` if you want. :shrug It's an array of strings!
-
-We can actually map through this array to generate our form options! Each `<option>` should use the current `devLevel` for its `key` and `value` attributes, and also for its inner text. See if you can set it up!
-
-## Step 5: Change state
-
-That's a handsome form, but currently when we select a level, nothing happens. We'll need to hook it up to state in `App.js` by passing in our setter through props:
+Instead of `SEEEEARCH`, let's put a _controlled_ Bootstrap form inside that `div`. First, `import Form from 'react-bootstrap/Form'`, then place this inside the `div`:
 
 ```js
-    <Filter setDevLevelFilter={setDevLevelFilter}/>
+    <Form.Control type="search" placeholder="Search a name" value={searchTerm} onChange={(e)=>setSearchTerm(e.target.value)} />
 ```
 
-Now we can use `props.setDevLevelFilter` in the `Filter` component! Set up an `onChange` callback for the form to set the desired dev level in state. Test with React dev tools to see if the value is changing!
+>NOTE: The `value` property will track `searchTerm` in state... and the `onChange` property will change `searchTerm` when the user creates input.
 
-## Step 6: Filter
+Test this out by opening React dev tools, selecting the `Search` component, then typing in the search bar. Does state change?
 
->There are lots of ways to solve this, and depending on the situation in your future apps, you might use a variety of solutions. We'll look at one here.
+## Step 4: Get some data
 
-### Pseudocode!
+We know that we can grab the value of `searchTerm` and plug it into the search endpoint that our back-end engineers built. Let's try it.
 
-What do we need to do?
-
-- If a filter is set, we should just show people whose dev level matches the selected level.
-- If _no_ filter is set, just show the list of people
-
-### Filter by dev level
-
-We had some code earlier that worked to filter. We could set it up to work dynamically using our value in state just by plugging it in!
+First, we'll need a place to store our search results. Add:
 
 ```js
-          { people
-              .filter(person => person.devLevel === devLevelFilter)
+    const [ searchResults, setSearchResults ] = useState([])
+```
+
+> ### User-centered design
+>
+> We want a fancy, modern search, because we don't want our lazy Gen Z users to have to hit "Enter." They can't even pay off their own student loans, jeez! How could we update the results with each keystroke?
+>
+> Well, we know we'll use `useEffect` to fetch our data... if we add `searchTerm` to the dependency array, then our `useEffect` will run every time `searchTerm` changes. Perfect!
+
+Now we need to set up a `useEffect` to grab search data, using a similar pattern to what we've used before. The main difference is that now we need to provide a fake "URL" to `fakeFetch`, and it should match the pattern our back-end engineers designed:
+
+```js
+    useEffect(()=>{
+        const getSearchResults = async () => {
+            const res = await fakeFetch(`/search?term=${searchTerm}`) // interpolate searchTerm from state into query
+            setSearchResults(await res.json()) // set results in searchResults
+        }
+        getSearchResults()
+    },[searchTerm]) // adding searchTerm to the dependency array means this refreshes with every keystroke
+```
+
+Now we should be able to type in the search bar and, in React dev tools, watch `searchResults` change in state!
+
+>NOTE: Even if this is working for you, ask your instructor to talk about it if there's anything you don't understand.
+
+## Step 5: Show the search results
+
+React Bootstrap has some great built-in components that can help us show these results crisply: `<ListGroup>` and `<ListGroup.Item>`.
+
+>Take a moment to peek at the `<ListGroup>` [documentation](https://react-bootstrap.github.io/components/list-group/).
+
+We pretty easily show our results using these components and our best friend `.map`. Add this right below the `<Form.Control>` (inside the main `div`) in `Search.jsx`:
+
+```js
+            <ListGroup className="position-fixed">
+                {searchResults.map(result => (
+                    <ListGroup.Item>
+                        {result.fullName}
+                    </ListGroup.Item>
+                ))}
+            </ListGroup>
+```
+
+Holy wow. `position-fixed` here is a Bootstrap class that locks our results list underneath our search input. Then we just have to use `.map` to create a `<ListGroup.Item>` for each result, and show the `fullName`.
+
+## Step 6: Pause
+
+Great, we have search results, but... what are they supposed to, like, do?
+
+We _could_ set something up to filter our main page for a certain user... But instead, let's set up an individual profile page using React Router and our other back-end endpoint.
+
+## Step 7: Create the profile view
+
+Bootstrap could _probably_ do something cool for us here, but we've got time constraints. Let's just create a new component, `Profile.jsx` that returns a `div`:
+
+```js
+export default function Profile (props) {
+    return (
+        <div className="profile">
+            PROFILE
+        </div>
+    )
+}
+```
+
+Now import it into `App.js` and try plugging it in to your list of people. You'll have to scroll to the bottom, but you should see `PROFILE`.
+
+## Step 8: Add routing
+
+Our homepage filtering is already great, so we _only_ want the profile to show up if users go to `/profiles/{userId}` in our app. We can use React Router (which is already installed) to control this.
+
+First, set up React Router by adding `import { BrowserRouter as Router } from 'react-router-dom'` to `index.js` and then wrapping your `<App>` component in a `<Router>`. (This is tricky and specific; ask your instructor for help.)
+
+In `App.js`, add `import { Routes, Route } from 'react-router-dom'` and set up routes to do the following:
+- Only show the filters at `/`.
+- Show the `<Profile>` component at `/profiles/{userId}`
+
+Try it on your own, but it will be _really_ tough. You might end up with something like this:
+
+```js
+  return (
+    <div className="app">
+      <div className="position-sticky top-0 bg-body pb-2" style={{zIndex:10}}>
+        <Header />
+        <Routes>
+          <Route path="/" element={(
+            <Filter 
+              setDevLevelFilter={setDevLevelFilter}
+              setCompanyFilter={setCompanyFilter}
+              setGenreFilter={setGenreFilter}
+              />)} />
+        </Routes>
+      </div>
+      <Routes>
+        <Route path="/" element={(
+          <div className="people-div d-flex flex-wrap justify-content-center">
+            { people
+              .filter(filterFunction)
               .map(person => <Person key={person.id} person={person} />) }
+          </div>)} />
+        <Route path="/profiles/:id" element={(<Profile />)} />
+      </Routes>
+    </div>
+  );
 ```
 
-Try it out. Pretty neat! There's a problem, though: If we select "No filter," we don't see _anybody_. :/
+> ### UUUUGH, that's awful: Let's break this down.
+> 
+> - `<Header />` is outside any `<Routes>` component, so it always shows up.
+> - There are _two_ `<Routes>` components:
+>     - Inside the header div, the route just shows `<Filter>` if the URL is "/" and otherwise hides it.
+>     - In the second `<Routes>` component, path "/" shows our normal list, and path "/profiles/:id" shows our `<Profile>` component. We'll use `:id` in a moment.
+>
+> It would make sense to refactor our homepage list into a new `<People>` component, but that's out of scope for our current goals. There might be other smart ways to refactor it, too... Food for thought later!
 
-### Get logical
+## Step 9: Use the `:id` slug
 
-Take a look at just our callback function inside `.filter()`:
+Just like we learned with Express routes, React Router lets us use a "slug", or a route parameter, to grab information we need from the URL. With React Router, we use a hook called `useParams`. In `Profile.jsx`:
 
 ```js
-    person => person.devLevel === devLevelFilter
+import { useParams } from 'react-router-dom'
 ```
 
-Right now this function returns `true` if the person's dev level matches the filter. We need to add the logic to make it _also_ return `true` for everyone if the `devLevelFilter` is `""`. See if you can do it!
+Now, let's... _use_ it. Add this inside your function in `Profile.jsx`:
 
-Hints:
-- Remember that a callback function is... a function. It doesn't _have_ to be on one line.
-- Also remember that, if you _want_ it to be on one line, you can use a ternary statement (`?`) or the _OR_ operator (`||`) to do some slick logic.
+```js
+    const params = useParams()
+    console.log(params)
+```
 
->Make sure to check with your instructor if you get stuck!
+Navigate to `http://localhost:3000/profiles/2` in your browser and open your browser console. You should see `{id: '2'}`. We can use this.
 
-## BONUS: Set up another filter
+## Step 10: Grab an individual user
 
-`utils/constants.js` _also_ includes the enumerated values for `company` and `favoriteMusicGenre`. Import those values and add another drop-down.
+For the next stage, we'll need our core React moves. In `Profile.jsx` add:
 
-How should you adjust your logic in `App.js` to filter by _both_?
+```js
+import { useEffect, useState } from 'react'
+```
+
+...and set up a value in state to hold our individual user:
+
+```js
+    const [user, setUser] = useState({})
+```
+
+Similar to what we have in `Search.jsx`, we'll set up a `useEffect` to hit our individual user endpoint:
+
+```js
+    useEffect(()=>{
+        const getUser = async () => {
+            const res = await fakeFetch(`/users/${params.id}`)
+            setUser(await res.json())
+        }
+        getUser()
+    },[params.id])
+```
+
+>NOTE: In production applications, we might need to set up more complex logic here to handle what happens when things _don't_ go well. For right now, let's look at what we can do when we nail it!
+
+Now, replace the test "PROFILE" with `{user.fullName}`.
+
+## Step 11: Fill out the profile
+
+This could be fun to come back to later and style it more carefully. For right now, fill our profile with a few `<h1>`, `<h2>`, and `<p>`s that display things like `user.fullName`, `user.company`, `user.devLevel`, and `user.bio`.
+
+>NOTE: If you've already completed [part 3A](https://github.com/jeremyrrose/synched-in-part-3a), you could incorporate your "favorites" logic here, too. Take a look at this later!
+
+## Step 12: Add links to search
+
+Now that we've set up a place to go to to see an individual person, we can have our search direct users to an individual profile!
+
+We'll need to grab the `<Link>` component from React Router in `Search.jsx`:
+
+```js
+import { Link } from 'react-router-dom'
+```
+
+Now all we have to do is wrap each `<ListGroup.Item>` in a `<Link>` to the right location:
+
+```js
+                    <Link to={`profiles/${result.id}`}>
+                        <ListGroup.Item>
+                            {result.fullName}
+                        </ListGroup.Item>
+                    </Link>
+```
+
+>Break it down: What is `result.id`?
+
+Search a string and click on a name! Or use keyboard controls (`TAB` and `ENTER`) to navigate -- Bootstrap is relentlessly accessible.
+
+## BONUS: Have the SynchedIn logo link back to "/"
+
+That's expected behavior. You may have to style you `<Link>` with something like `{{color: "white", textDecoration: "none" }}`.
+
+## BONUS: Flesh out and style the search results
+
+Right now we just display the `fullName` for each search result. We also get the `company` for each result. If we `import Badge from 'react-bootstrap/Badge'`, we could do something like this:
+
+```js
+    <Link to={`profiles/${result.id}`} style={{textDecoration: "none"}}>
+        <ListGroup.Item>
+            <h5>{result.fullName}<Badge bg="light" text="secondary">{result.company}</Badge></h5>
+        </ListGroup.Item>
+    </Link>
+```
+
+## BONUS: Finish the `<Profile>` component
+
+Use Bootstrap or CSS to make it look like you want it to!
+
+## MEGABONUS: Consider step 4
+
+[SynchedIn step 4](https://github.com/jeremyrrose/synched-in-part4)
