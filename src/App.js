@@ -5,6 +5,7 @@ import fakeFetch from './utils/fakeFetch'
 import Header from './components/Header';
 import Filter from './components/Filter'
 import Person from './components/Person';
+import Profile from './components/Profile'
 
 function App() {
 
@@ -66,6 +67,7 @@ function App() {
                     .map(person => <Person key={person.id} person={person} favorites={favorites} setFavorites={setFavorites} />) }
             </div>
           )} />
+        <Route path="profiles/:id" element={(<Profile />)} />
       </Routes>
     </div>
   );
